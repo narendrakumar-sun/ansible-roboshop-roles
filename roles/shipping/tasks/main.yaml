@@ -13,26 +13,35 @@
     name: common
     tasks_from: systemd-setup.yaml
 
-- name: install python dependencie
+- name: install python dependencies
   ansible.builtin.pip:
-    name: "{{ item }}"
+    name:
+      - cryptography
+      - PyMySQL
     executable: pip3.9
-  loop:
-  - cryptography
-  - PyMySQL
 
-- name: import shipping data
+- name: import schema
   community.mysql.mysql_db:
     state: import
-    name: all
+    name: shipping
     login_host: "{{ MYSQL_HOST }}"
     login_user: root
-    login_password: RoboShop@1
-    target: "{{ item }}"
-  loop:
-  - /app/db/schema.sql
-  - /app/db/app-user.sql 
-  - /app/db/master-data.sql
+    login_password: "{{ MYSQL_ROOT_PASSWORD }}"
+    target: /app/db/schema.sql
+
+- name: import app-user
+  community.mysql.mysql_query:
+    login_host: "{{ MYSQL_HOST }}"
+    login_user: root
+    login_password: "{{ MYSQL_ROOT_PASSWORD }}"
+    query: "{{ lookup('file', '/app/db/app-user.sql') }}"
+
+- name: import master data
+  community.mysql.mysql_query:
+    login_host: "{{ MYSQL_HOST }}"
+    login_user: root
+    login_password: "{{ MYSQL_ROOT_PASSWORD }}"
+    query: "{{ lookup('file', '/app/db/master-data.sql') }}"
 
 - name: start and enable shipping
   ansible.builtin.service:
